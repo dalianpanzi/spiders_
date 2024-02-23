@@ -7,9 +7,16 @@ import pandas as pd
 import time
 from datetime import datetime
 
+# conn=sqlite3.connect("demo.db")  创建数据库，与project在一个根目录下
+#c=conn.cursor()
+#c.execute('''create table tidal
+             (date_time date not null,
+              tide int);''') 参数是datetime 和tide  后面是数据格式
 
 def spider(url):
     html = urllib.request.urlopen(url).read()
+    #content=html.decode("utf-8")  变为可读的
+    # print(content)
     soup = BeautifulSoup(html, 'html.parser', from_encoding='utf-8')
     res_data = soup.findAll('script')
     tidal_data = str(res_data[7])
