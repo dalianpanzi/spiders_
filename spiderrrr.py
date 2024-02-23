@@ -36,7 +36,7 @@ def save_in_db(tidal,tidal_date):
             tidal_item['level']=value
             insert_list.append(tidal_item)
 
-    conn=sqlite3.connect("E:\疏浚 工程所\横沙\pythonProject\demo.db")
+    conn=sqlite3.connect("E:\***\demo.db")
     c=conn.cursor()
     for item in insert_list:
         c.execute("insert into tidal (date_time,tide) \
