@@ -73,7 +73,7 @@ def httpRequest(date,sitecode):
         "serchdate": date,
         "sitecode": sitecode
     }
-#sitecode编号：澉浦-T073,
+#sitecode编号：澉浦-T073, 乍浦-T072，嵊山-T071，定海-T080， 大戢山-T070，滩浒-T074
 #中断请求确认
     data_json=json.dumps(data)
     response = requests.post(url, data=data_json, headers=headers)
