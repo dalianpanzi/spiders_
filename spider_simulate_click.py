@@ -73,7 +73,7 @@ def httpRequest(date,sitecode):
         "serchdate": date,
         "sitecode": sitecode
     }
-#sitecode编号：澉浦-T073, 乍浦-T072，嵊山-T071，定海-T080， 大戢山-T070，滩浒-T074
+#sitecode编号：澉浦-T073, 乍浦-T072，嵊山-T071，定海-T080， 大戢山-T070，滩浒-T074 沥港-T080
 #中断请求确认
     data_json=json.dumps(data)
     response = requests.post(url, data=data_json, headers=headers)
@@ -85,15 +85,18 @@ def httpRequest(date,sitecode):
 def get_data(response):
     result={}
     data=json.loads(response)
-    for item in data.get('data',[]):
-        coor=item['coordinate']
-        coor=coor.replace(" ","")
-        if 'filedata' in item:
-            for key,value in item['filedata'].items():
-                if key.startswith('a') and key[1:].isdigit():
-                    result[key]=value
-    sorted_results = sorted(result.items(), key=lambda item: int(item[0][1:]))
-    tidall = [tup[1] for tup in sorted_results]
+    coor=None
+    tidall=None
+    if len(data.get('data'))!=0:
+        for item in data.get('data',[]):
+            coor=item['coordinate']
+            coor=coor.replace(" ","")
+            if 'filedata' in item:
+                for key,value in item['filedata'].items():
+                    if key.startswith('a') and key[1:].isdigit():
+                        result[key]=value
+        sorted_results = sorted(result.items(), key=lambda item: int(item[0][1:]))
+        tidall = [tup[1] for tup in sorted_results]
     return coor,tidall
 
 #coor,sorted_results=get_data(a)
@@ -114,7 +117,11 @@ def batch_tidal(dict):#dict{sitecode:[starttime--datetime(2024,1,4)-endtime]}
         for d in request_date_list:
             response=httpRequest(d,key)
             coor, tidall=get_data(response)
-            tidal.append(tidall)
+            if tidall!=None:
+                tidal.append(tidall)
+            else:
+                ti_set_0=[0]*24
+                tidal.append(ti_set_0)
             #sit_coor =json.dumps({key: coor})
         get_tidal = list(itertools.chain.from_iterable(tidal))
         df.insert(loc=1,column='tidal', value =get_tidal)
