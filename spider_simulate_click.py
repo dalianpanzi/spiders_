@@ -128,6 +128,91 @@ def batch_tidal(dict):#dict{sitecode:[starttime--datetime(2024,1,4)-endtime]}
         tidal_dict[key]=df
     return tidal_dict
 
+
+#流速
+def httpRequest_t(date,sitecode):
+
+    headers = {
+        'Accept': 'application/json,text/plain,*/*',
+        'Content-Type': 'application/json;charset=utf-8',
+        'User-Agent': 'User-Agent:Mozilla/5.0'
+    }
+    url="https://mds.nmdis.org.cn/service/rdata/front/knowledge/chaoliudata/list"
+
+    data = {
+        "serchdate": date,
+        "sitecode": sitecode
+    }
+#中断请求确认
+    data_json=json.dumps(data)
+    response = requests.post(url, data=data_json, headers=headers)
+    response=response.text
+    return response
+def get_trend(response):
+    dire,tren={},{}
+    dirr,trend=None,None
+    data=json.loads(response)
+    item=data.get('data')
+    if item[0]['positivedirection']:
+        pos=item[0]['positivedirection']
+        neg=item[0]['negativedirection']
+        for key, value in item[0]['data'].items():
+            if key.startswith('s') and key[1:].isdigit():
+                if value<0:
+                    dire[key]=neg
+                    tren[key]=abs(value/100)
+                else:
+                    dire[key]=pos
+                    tren[key]=value/100
+    else:
+        for key,value in item[0]['data'].items():
+            if key.startswith('d'):
+                dire[key]=value
+            elif key.startswith('s') and key[1:].isdigit():
+                tren[key]=value/100 
+    sorted_d = sorted(dire.items(), key=lambda item: int(item[0][1:]))
+    sorted_t = sorted(tren.items(), key=lambda item: int(item[0][1:]))
+    
+    dirr=[tup[1] for tup in sorted_d]
+    trend=[tu[1] for tu in sorted_t]
+    return dirr, trend
+
+def batch_trend(dict):
+    trend_dict={}
+    for key,value in dict.items():
+        df=pd.DataFrame()
+        df['t']=pd.date_range(value[0],value[1],freq='h')
+        df.drop(df.index[-1],inplace=True)
+        request_date_list=[]
+        current_date=value[0]
+        end_date=value[1]
+        dire,t=[],[]
+        while current_date<end_date:
+            request_date_list.append(current_date.strftime('%Y-%m-%d'))
+            current_date+=timedelta(days=1)
+        for d in request_date_list:
+            response=httpRequest_t(d,key)
+            dirr,trend=get_trend(response)
+            if dirr!=None and trend !=None:
+                dire.append(dirr)
+                t.append(trend)
+            elif dirr==None:
+                d_s=[0]*24
+                dire.append(d_s)
+            elif trend==None:
+                t_s=[0]*24
+                t.append(t_s)
+        get_d=list(itertools.chain.from_iterable(dire))
+        get_t=list(itertools.chain.from_iterable(t))
+        df.insert(loc=1,column='direction', value =get_d)
+        df.insert(loc=2, column='trend', value=get_t)
+        trend_dict[key]=df
+    return trend_dict
+
+
+
+
+
 if __name__=="__main__":
   input_dict={'T073':[datetime(2024,7,1),datetime(2024,8,5)]}
   tidal_dict=batch_tidal(input_dict)
